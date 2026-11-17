@@ -40,6 +40,7 @@ class MainActivity : Activity() {
     private lateinit var fullscreenContainer: FrameLayout
     private lateinit var urlInput: EditText
     private lateinit var btnCursor: Button
+    private lateinit var btnSpeed: Button
     private lateinit var progress: ProgressBar
     private lateinit var cursor: CursorView
 
@@ -50,6 +51,10 @@ class MainActivity : Activity() {
     private var cursorX = 0f
     private var cursorY = 0f
 
+    private val speedSteps = floatArrayOf(0.5f, 1f, 1.5f, 2.5f)
+    private val speedLabels = arrayOf("×0.5", "×1", "×1.5", "×2.5")
+    private var speedIndex = 1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -59,6 +64,10 @@ class MainActivity : Activity() {
         fullscreenContainer = findViewById(R.id.fullscreenContainer)
         urlInput = findViewById(R.id.urlInput)
         btnCursor = findViewById(R.id.btnCursor)
+        btnSpeed = findViewById(R.id.btnSpeed)
+        speedIndex = getSharedPreferences("tvbrowser", Context.MODE_PRIVATE)
+            .getInt("speed", 1).coerceIn(0, speedSteps.size - 1)
+        btnSpeed.text = "Швидкість: " + speedLabels[speedIndex]
         progress = findViewById(R.id.progress)
 
         cursor = CursorView(this)
@@ -155,6 +164,13 @@ class MainActivity : Activity() {
             refreshCursor(webView.isFocused)
         }
 
+        btnSpeed.setOnClickListener {
+            speedIndex = (speedIndex + 1) % speedSteps.size
+            btnSpeed.text = "Швидкість: " + speedLabels[speedIndex]
+            getSharedPreferences("tvbrowser", Context.MODE_PRIVATE)
+                .edit().putInt("speed", speedIndex).apply()
+        }
+
         urlInput.setOnEditorActionListener { v, actionId, event ->
             val enter = event != null &&
                 event.keyCode == KeyEvent.KEYCODE_ENTER &&
@@ -234,7 +250,7 @@ class MainActivity : Activity() {
     }
 
     private fun moveCursor(keyCode: Int, repeat: Int) {
-        val step = (dp(12) + minOf(repeat, 20) * dp(2)).toFloat()
+        val step = (dp(12) + minOf(repeat, 20) * dp(2)) * speedSteps[speedIndex]
         val maxX = (webContainer.width - 1).toFloat()
         val maxY = (webContainer.height - 1).toFloat()
         when (keyCode) {
